@@ -1,0 +1,4 @@
+#!/bin/bash
+BIN="$(cd `dirname "$0"` && pwd)"
+BASE="$(dirname "$BIN")"
+node "$BASE/treadmill.js" $@
