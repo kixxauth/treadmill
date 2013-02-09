@@ -45,13 +45,24 @@ var runner = (function () {
 
 
 runner.addTest('syntax-error', function (stdout, stderr, err) {
+    // Uncomment this to see unexpected errors in Treadmill
+    // console.log(err.stack);
+
     var g = /There was a SyntaxError in the test file/.test(stderr)
     assert.ok(g, 'SyntaxError message');
+    assert.equal(err.code, 2, 'error code');
 });
 
 runner.addTest('file-error', function (stdout, stderr, err) {
     var g = /There was an Error thrown in the test file/.test(stderr)
     assert.ok(g, 'file Error message');
+    assert.equal(err.code, 2, 'error code');
+});
+
+runner.addTest('group-error', function (stdout, stderr, err) {
+    var g = /There was an Error thrown in the group 'ErrorThrower'/.test(stderr)
+    assert.ok(g, 'group Error message');
+    assert.equal(err.code, 2, 'error code');
 });
 
 

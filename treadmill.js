@@ -14,6 +14,11 @@ function uncurry(f) {
 }
 
 
+function newObject(proto) {
+    return Object.create(proto);
+}
+
+
 var slice = uncurry(arraySlice);
 
 
@@ -32,10 +37,35 @@ function asyncStack(functions) {
 }
 
 
+function newEventEmitter() {
+    var self = newObject(null)
+      , handlers = {}
+
+    self.on = function (name, handler) {
+        var funcs = handlers[name] || (handlers[name] = [])
+        funcs.push(handler);
+    };
+
+    self.emit = function (name) {
+        var args = slice(arguments, 1)
+          , funcs = handlers[name] || []
+          , len = funcs.length
+          , i = 0
+
+        for (; i < len; i += 1) {
+            funcs[i].apply(this, args);
+        }
+        return this;
+    };
+
+    return self;
+}
+
+
 function newGroup(spec) {
     var self = newObject(newEventEmitter())
-      , parentGroup = spec.parent
-      , groupName = spec.name
+      , parentGroup = spec ? spec.parent : null
+      , groupName = spec ? spec.name : ''
       , beforeStack = []
       , afterStack = []
       , beforeEachStack = []
@@ -93,7 +123,7 @@ function newGroup(spec) {
     };
 
     self.sequence = function () {
-        var seq = reduce(includeStack, function (memo, substack) {
+        var seq = includeStack.reduce(function (memo, substack) {
             return memo.concat(substack());
         }, beforeStack);
         return seq.concat(afterStack);
@@ -109,8 +139,10 @@ function newGroup(spec) {
 }
 
 
-function newTree(root) {
-    var currentGroup = root
+function newTree() {
+    var self = newObject(null)
+      , root = newGroup(null)
+      , currentGroup = root
       , groupMethods = [ 'appendBefore'
                        , 'appendAfter'
                        , 'appendBeforeEach'
@@ -132,7 +164,7 @@ function newTree(root) {
 
     self.sequence = root.sequence();
 
-    self = reduce(groupMethods, function (self, name) {
+    self = groupMethods.reduce(function (self, name) {
         self[name] = function (arg) {
             currentGroup[name](arg);
             return self;
@@ -146,7 +178,7 @@ function newTree(root) {
 
 function newRunner () {
     var self = newObject(newEventEmitter())
-      , tree = newTree(newGroup(null))
+      , tree = newTree()
       , currentlyRunning
       , eventEmitter = newEventEmitter()
 
@@ -159,7 +191,18 @@ function newRunner () {
     }
 
     self.appendGroup = function (name, body) {
-        var childGroup = tree.appendGroup({name: name, body: body});
+        function bodyWrap() {
+            var msg
+            try {
+                body();
+            } catch (e) {
+                msg = "There was an Error thrown in the group '";
+                msg += name +"':\n"+ (e.stack || e.toString());
+                throw new Error(msg);
+            }
+        }
+
+        var childGroup = tree.appendGroup({name: name, body: bodyWrap});
 
         childGroup.on(START_TEST, function (info) {
             currentlyRunning = info;
@@ -191,8 +234,13 @@ function newRunner () {
         return func;
     });
 
-    self.run = function (callback) {
-        var functions = tree.sequence().reverse()
+    self.run = function () {
+        var callback
+          , functions = tree.sequence().reverse()
+
+        callback = function () {
+            self.emit(DONE);
+        };
 
         functions.forEach(function (nextFunction) {
             var child = callback;
@@ -208,10 +256,39 @@ function newRunner () {
 }
 
 
+function newSession(vocab, reporter) {
+    var self = newObject(null)
+      , runner = newRunner()
+
+    vocab(runner);
+    reporter(runner);
+
+    self.run = function () {
+        runner.run();
+        return self;
+    };
+
+    return self;
+}
+
+
+function defaultVocabulary(runner) {
+    global.describe = function (name, body) {
+        runner.appendGroup(name, body);
+        return;
+    };
+}
+
+
+function defaultReporter(runner) {
+}
+
+
 function main(opts) {
     var dir = opts.path
       , msg
       , files
+      , session = newSession(defaultVocabulary, defaultReporter)
 
     try {
         files = FS.readdirSync(dir);
@@ -246,6 +323,8 @@ function main(opts) {
             throw new Error(msg);
         }
     })
+
+    session.run();
 }
 
 
