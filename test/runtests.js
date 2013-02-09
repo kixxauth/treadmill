@@ -44,9 +44,14 @@ var runner = (function () {
 }());
 
 
-runner.addTest('syntax-error', function (stdin, stderr, err) {
+runner.addTest('syntax-error', function (stdout, stderr, err) {
     var g = /There was a SyntaxError in the test file/.test(stderr)
     assert.ok(g, 'SyntaxError message');
+});
+
+runner.addTest('file-error', function (stdout, stderr, err) {
+    var g = /There was an Error thrown in the test file/.test(stderr)
+    assert.ok(g, 'file Error message');
 });
 
 

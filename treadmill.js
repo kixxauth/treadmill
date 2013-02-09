@@ -241,6 +241,9 @@ function main(opts) {
                 msg += path +"'.";
                 throw new Error(msg);
             }
+            msg = "There was an Error thrown in the test file '";
+            msg += path +"':\n"+ (e.stack || e.toString());
+            throw new Error(msg);
         }
     })
 }
