@@ -1,10 +1,14 @@
 var FS = require('fs')
   , PATH = require('path')
+  , assert = require('assert')
 
   , OPT = require('optimist')
 
   , arrayProto = Array.prototype
   , arraySlice = Array.prototype.slice
+
+  , START_TEST = 'start-test'
+  , DONE = 'done'
 
 
 function uncurry(f) {
@@ -66,48 +70,49 @@ function newGroup(spec) {
     var self = newObject(newEventEmitter())
       , parentGroup = spec ? spec.parent : null
       , groupName = spec ? spec.name : ''
-      , beforeStack = []
-      , afterStack = []
+      , beforeRunStack = []
+      , afterRunStack = []
       , beforeEachStack = []
       , afterEachStack = []
-      , includeStack = []
+      , testStack = []
 
-    self.appendBefore = function (func) {
-        beforeStack.push(func);
-        return self;
+    self.appendBeforeRun = function (func) {
+        beforeRunStack.push(func);
+        return this;
     };
 
-    self.appendAfter = function (func) {
-        afterStack.push(func);
-        return self;
+    self.appendAfterRun = function (func) {
+        afterRunStack.push(func);
+        return this;
     };
 
     self.appendBeforeEach = function (func) {
         beforeEachStack.push(func);
-        return self;
+        return this;
     };
 
     self.appendAfterEach = function (func) {
         afterEachStack.push(func);
-        return self;
+        return this;
     };
 
     self.appendTest = function (spec) {
         var testName = spec.name
           , func = spec.func
 
-        function beforeTest() {
-            self.emit(TEST_START, [groupName, testName]);
+        function beforeTest(callback) {
+            self.emit(START_TEST, {group: groupName, test: testName});
+            return callback();
         }
 
-        includeStack.push(function () {
+        testStack.push(function () {
             var substack = [beforeTest]
                 .concat(self.sequenceBeforeEach())
                 .concat([func])
                 .concat(self.sequenceAfterEach())
             return substack;
         });
-        return self;
+        return this;
     };
 
     self.sequenceBeforeEach = function () {
@@ -123,15 +128,15 @@ function newGroup(spec) {
     };
 
     self.sequence = function () {
-        var seq = includeStack.reduce(function (memo, substack) {
+        var seq = testStack.reduce(function (memo, substack) {
             return memo.concat(substack());
-        }, beforeStack);
-        return seq.concat(afterStack);
+        }, beforeRunStack);
+        return seq.concat(afterRunStack);
     };
 
     self.spawnChild = function (name) {
         var child = newGroup({name: name, parent: self});
-        includeStack.push(child.sequence);
+        testStack.push(child.sequence);
         return child;
     };
 
@@ -143,12 +148,6 @@ function newTree() {
     var self = newObject(null)
       , root = newGroup(null)
       , currentGroup = root
-      , groupMethods = [ 'appendBefore'
-                       , 'appendAfter'
-                       , 'appendBeforeEach'
-                       , 'appendAfterEach'
-                       , 'appendTest'
-                       ]
 
     self.appendGroup = function (spec) {
         var name = spec.name
@@ -162,15 +161,34 @@ function newTree() {
         return child;
     };
 
-    self.sequence = root.sequence();
+    self.appendBeforeRun = function (func) {
+        currentGroup.appendBeforeRun(func);
+        return this;
+    };
 
-    self = groupMethods.reduce(function (self, name) {
-        self[name] = function (arg) {
-            currentGroup[name](arg);
-            return self;
-        };
-        return self;
-    }, self);
+    self.appendAfterRun = function (func) {
+        currentGroup.appendAfterRun(func);
+        return this;
+    };
+
+    self.appendBeforeEach = function (func) {
+        currentGroup.appendBeforeEach(func);
+        return this;
+    };
+
+    self.appendAfterEach = function (func) {
+        currentGroup.appendAfterEach(func);
+        return this;
+    };
+
+    self.appendTest = function (spec) {
+        currentGroup.appendTest(spec);
+        return this;
+    };
+
+    self.sequence = function () {
+        return root.sequence();
+    };
 
     return self;
 }
@@ -179,16 +197,7 @@ function newTree() {
 function newRunner () {
     var self = newObject(newEventEmitter())
       , tree = newTree()
-      , currentlyRunning
       , eventEmitter = newEventEmitter()
-
-    function bindMethod(name, func) {
-        treeMethod = tree[name];
-        self[name] = function (arg) {
-            treeMethod(func(arg));
-            return self;
-        };
-    }
 
     self.appendGroup = function (name, body) {
         function bodyWrap() {
@@ -205,34 +214,35 @@ function newRunner () {
         var childGroup = tree.appendGroup({name: name, body: bodyWrap});
 
         childGroup.on(START_TEST, function (info) {
-            currentlyRunning = info;
-            self.emit(START_TEST, {group: info[0], test: info[1]});
-        });
-        childGroup.on(END_TEST, function (fullName) {
-            self.emit(END_TEST, {group: info[0], test: info[1]});
+            self.emit(START_TEST, info);
         });
         return self;
     };
 
-    bindMethod('appendBeforeRun', function (func) {
-        return func;
-    });
+    self.appendBeforeRun = function (func) {
+        tree.appendBeforeRun(func);
+        return this;
+    };
 
-    bindMethod('appendAfterRun', function (func) {
-        return func;
-    });
+    self.appendAfterRun = function (func) {
+        tree.appendAfterRun(func);
+        return this;
+    };
 
-    bindMethod('appendBeforeEach', function (func) {
-        return func;
-    });
+    self.appendBeforeEach = function (func) {
+        tree.appendBeforeEach(func);
+        return this;
+    };
 
-    bindMethod('appendAfterEach', function (func) {
-        return func;
-    });
+    self.appendAfterEach = function (func) {
+        tree.appendAfterEach(func);
+        return this;
+    };
 
-    bindMethod('appendTest', function (func) {
-        return func;
-    });
+    self.appendTest = function (spec) {
+        tree.appendTest(spec);
+        return this;
+    };
 
     self.run = function () {
         var callback
@@ -277,6 +287,26 @@ function defaultVocabulary(runner) {
         runner.appendGroup(name, body);
         return;
     };
+
+    global.beforeRun = function (func) {
+        runner.appendBeforeRun(func);
+    };
+
+    global.afterRun = function (func) {
+        runner.appendAfterRun(func);
+    };
+
+    global.beforeEach = function (func) {
+        runner.appendBeforeEach(func);
+    };
+
+    global.afterEach = function (func) {
+        runner.appendAfterEach(func);
+    };
+
+    global.it = function (name, func) {
+        runner.appendTest({name: name, func: func});
+    };
 }
 
 
@@ -307,11 +337,14 @@ function main(opts) {
     files.map(function (file) {
         return PATH.join(dir, file);
     }).filter(function (path) {
-        var stats = FS.statSync(path);
-        return stats.isFile();
+        var stats = FS.statSync(path)
+          , isFile = stats.isFile()
+          , isHidden = /^\./.test(PATH.basename(path))
+
+        return isFile && !isHidden;
     }).forEach(function (path) {
         try {
-            require(path.replace(/.js$/, ''));
+            require(PATH.join(process.cwd(), path.replace(/.js$/, '')));
         } catch (e) {
             if (e.name === 'SyntaxError') {
                 msg = "There was a SyntaxError in the test file '";

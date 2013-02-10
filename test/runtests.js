@@ -44,10 +44,20 @@ var runner = (function () {
 }());
 
 
-runner.addTest('syntax-error', function (stdout, stderr, err) {
-    // Uncomment this to see unexpected errors in Treadmill
-    // console.log(err.stack);
+runner.addTest('full-tests', function (stdout, stderr, err) {
+    if (err) {
+        console.error('Treadmill error while test Treadmill:');
+        console.error('STDOUT', stdout);
+        console.error('STDERR', stderr);
+        process.exit(2);
+    }
 
+    console.log('STDOUT', stdout);
+    console.log('STDERR', stderr);
+    console.log('ERR', err);
+});
+
+runner.addTest('syntax-error', function (stdout, stderr, err) {
     var g = /There was a SyntaxError in the test file/.test(stderr)
     assert.ok(g, 'SyntaxError message');
     assert.equal(err.code, 2, 'error code');
