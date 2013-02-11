@@ -344,7 +344,7 @@ function main(opts) {
         return isFile && !isHidden;
     }).forEach(function (path) {
         try {
-            require(PATH.join(process.cwd(), path.replace(/.js$/, '')));
+            require(PATH.resolve(process.cwd(), path.replace(/.js$/, '')));
         } catch (e) {
             if (e.name === 'SyntaxError') {
                 msg = "There was a SyntaxError in the test file '";

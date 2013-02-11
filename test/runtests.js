@@ -55,6 +55,14 @@ runner.addTest('full-tests', function (stdout, stderr, err) {
     console.log('STDOUT', stdout);
     console.log('STDERR', stderr);
     console.log('ERR', err);
+
+    var ls = stdout.split('\n');
+    assert.equal(ls[0], '- PARSE START', 'PARSE START');
+    assert.equal(ls[1], '- PARSE END', 'PARSE END');
+    assert.equal(ls[2], '- layer 0; beforeRun 1', 'layer 0; beforeRun 1');
+    assert.equal(ls[3], '- layer 0; beforeRun 2', 'layer 0; beforeRun 2');
+    assert.equal(ls[4], '- layer 0; beforeEach 1', 'layer 0; beforeEach 1');
+    assert.equal(ls[5], '- layer 0; beforeEach 2', 'layer 0; beforeEach 2');
 });
 
 runner.addTest('syntax-error', function (stdout, stderr, err) {
