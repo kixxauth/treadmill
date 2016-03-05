@@ -1,14 +1,24 @@
 {
-    "name": "treadmill",
-    "version": "0.0.0",
-    "description": "An automated testing tool for Node.js programs. Give your code a workout.",
-    "author": "Kris Walker <kris@kixx.name> (http://www.kixx.name/)",
-    "bin": {"treadmill": "./bin/treadmill"},
-    "dependencies": {
-        "optimist": "0.3.5"
-    },
-    "repository": {
-        "typ": "git",
-        "url": "git://github.com/kixxauth/treadmill.git"
-    }
+  "name": "treadmill",
+  "version": "1.0.0",
+  "description": "A build tool for Node.js programs.",
+  "author": "Kris Walker <kris@kixx.name> (http://www.kixx.name/)",
+  "bin": {"treadmill": "./bin/treadmill.js"},
+  "scripts": {
+    "test": "xo"
+  },
+  "dependencies": {
+    "filepath": "~1.1.0",
+    "immutable": "~3.7.0"
+  },
+  "devDependencies": {
+    "xo": "~0.13.0"
+  },
+  "repository": {
+    "typ": "git",
+    "url": "git://github.com/kixxauth/treadmill.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kixxauth/treadmill/issues"
+  }
 }
