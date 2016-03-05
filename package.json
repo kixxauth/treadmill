@@ -4,12 +4,14 @@
   "description": "A build tool for Node.js programs.",
   "author": "Kris Walker <kris@kixx.name> (http://www.kixx.name/)",
   "bin": {"treadmill": "./bin/treadmill.js"},
+  "main": "./lib/treadmill.js",
   "scripts": {
     "test": "xo"
   },
   "dependencies": {
     "filepath": "~1.1.0",
-    "immutable": "~3.7.0"
+    "immutable": "~3.7.0",
+    "yargs": "~4.2.0"
   },
   "devDependencies": {
     "xo": "~0.13.0"
