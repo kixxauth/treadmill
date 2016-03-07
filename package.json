@@ -2,7 +2,6 @@
   "name": "treadmill",
   "version": "1.0.0",
   "description": "A build tool for Node.js programs.",
-  "author": "Kris Walker <kris@kixx.name> (http://www.kixx.name/)",
   "bin": {"treadmill": "./bin/treadmill.js"},
   "main": "./lib/treadmill.js",
   "scripts": {
@@ -22,5 +21,7 @@
   },
   "bugs": {
     "url": "https://github.com/kixxauth/treadmill/issues"
-  }
+  },
+  "author": "Kris Walker <kris@kixx.name> (http://www.kixx.name/)",
+  "license" : "MIT"
 }
