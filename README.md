@@ -31,18 +31,19 @@ Say you have a project folder that looks something like this:
 You could write an asset build file for Treadmill in the root of your project as `build.js` like this:
 
 ```js
+'use strict';
+
 const treadmill = require('treadmill');
+const browserify = require('browserify');
+const sass = require('sass');
+
 const task = treadmill.task;
 const Promise = treadmill.Promise;
 const log = treadmill.log;
 
-const browserify = require('browserify');
-const sass = require('sass');
-
 task('bundle-js', function (args, done) {
   const cwd = args.get('currentWorkingDirectory');
   const src = cwd.append('frontend', 'scripts', 'main.js');
-  const dest = cwd.append('public', 'assets', 'scripts', 'main.js');
 
   const bundler = browserify({
     debug: true,
@@ -68,12 +69,10 @@ task('build-assets', ['bundle-js', 'bundle-sass'], function (args) {
   const jsDest = cwd.append('public', 'assets', 'scripts', 'main.js');
   const cssDest = cwd.append('public', 'assets', 'styles', 'main.css');
 
-
   return Promise.all([
     jsDest.write(args.get('bundle-js')).then(function (file) {
       log('JavaScript bundle %d', file.stats().size);
     }),
-
     cssDest.write(args.get('bundle-sass')).then(function (file) {
       log('CSS bundle %d', file.stats().size);
     })
