@@ -1,10 +1,12 @@
+'use strict';
+
 const treadmill = require('treadmill');
+const browserify = require('browserify');
+const sass = require('sass');
+
 const task = treadmill.task;
 const Promise = treadmill.Promise;
 const log = treadmill.log;
-
-const browserify = require('browserify');
-const sass = require('sass');
 
 task('bundle-js', function (args, done) {
 	const cwd = args.get('currentWorkingDirectory');
