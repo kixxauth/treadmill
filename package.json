@@ -1,6 +1,6 @@
 {
   "name": "treadmill",
-  "version": "2.1.2",
+  "version": "2.2.0",
   "description": "A build tool for Node.js programs.",
   "bin": {"treadmill": "./bin/treadmill.js"},
   "main": "./lib/treadmill.js",
